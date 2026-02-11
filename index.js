@@ -1,11 +1,8 @@
-const express = require('express');
-const app = express();
+const WebSocket = require('ws');
 
-let data = [];
-
-process.argv.slice(2).forEach(val => {
-    data.push(val);
-});
+let data = process.argv.slice(2);
+let i = 0;
+const time = 5000
 
 if (data.length === 0) {
     console.error("No data provided");
@@ -14,16 +11,29 @@ if (data.length === 0) {
 
 console.log("Data:", data);
 
-let i = 0;
+const wss = new WebSocket.Server({ port: 3000 });
 
-app.get('/data', (req, res) => {
-    console.log("Request received");
-    res.send(data[i % data.length]);
-    i++;
+wss.on('connection', (ws) => {
+    console.log("Client connected");
+
+    const interval = setInterval(() => {
+        const msg = data[i % data.length];
+        ws.send(msg);
+        console.log("Sent:", msg);
+        i++;
+    }, time);
+
+    ws.on('close', () => {
+        console.log("Client disconnected");
+        clearInterval(interval);
+    });
+
+    ws.on('error', (err) => {
+        console.error("WebSocket error:", err);
+    });
 });
 
-app.listen(3000, '0.0.0.0', () => {
-    console.log('Server running on port 3000');
-});
+console.log("WebSocket server running on port 3000");
+
 
 // node index.js my name is amir suhail
